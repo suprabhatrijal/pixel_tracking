@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 # parser.add_argument('image', type=str, help='path to image file')
 # args = parser.parse_args()
 
-cap = cv.VideoCapture("./cam1.wmv")
+cap = cv.VideoCapture("./videos/cam1.wmv")
 
 font = cv.FONT_HERSHEY_SIMPLEX
 fps = cap.get(cv.CAP_PROP_FPS)
