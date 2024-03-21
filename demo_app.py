@@ -101,18 +101,12 @@ def process_video(uploaded_file):
             if  ref_frame is None:
                 ref_frame = img
 
-
-            k = cv.waitKey(30) & 0xff
-            if k == 27:
-                break
-
             # Now update the previous frame and previous points
             old_gray = frame_gray.copy()
             p0 = good_new.reshape(-1, 1, 2)
 
 
         # result.release()
-        cv.destroyAllWindows()
 
 
 
