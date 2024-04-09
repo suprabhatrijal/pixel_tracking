@@ -5,24 +5,17 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from streamlit_image_coordinates import streamlit_image_coordinates
 
 def get_cap(uploaded_file):
     return cv.VideoCapture(uploaded_file)
 
-st.title("OpenCV Demo App")
-st.subheader("This app allows you to play with Image filters!")
-
-uploaded_file = st.file_uploader("Choose a video...", type=["mp4", "mpeg", "wmv"])
-
-
 @st.cache_data
-def process_video(uploaded_file):
+def process_video(uploaded_file, p0):
     # To read file as bytes:
     bytes_data = uploaded_file.getvalue()
 
-    save_path = Path(f"./{uploaded_file.name}")
-    with open(save_path, mode="wb") as w:
-        w.write(uploaded_file.getvalue())
+
 
     cap = cv.VideoCapture(f"./{uploaded_file.name}")
 
@@ -44,8 +37,15 @@ def process_video(uploaded_file):
     # Take first frame and find corners in it
     ret, old_frame = cap.read()
     old_gray = cv.cvtColor(old_frame, cv.COLOR_BGR2GRAY)
-    p0 = cv.goodFeaturesToTrack(old_gray, mask = None, **feature_params)
 
+
+
+    print(type(old_frame))
+
+    if len(p0) == 0:
+        p0 = cv.goodFeaturesToTrack(old_gray, mask = None, **feature_params)
+
+    print(p0.shape)
     # Create a mask image for drawing purposes
     mask = np.zeros_like(old_frame)
 
@@ -119,8 +119,48 @@ def process_video(uploaded_file):
         return (df, ref_frame,  x, y,fps)
 
 
+st.title("OpenCV Demo App")
+st.subheader("This app allows you to play with Image filters!")
+
+
+uploaded_file = st.file_uploader("Choose a video...", type=["mp4", "mpeg", "wmv"])
+
+
+
+def select_points():
+    if 'p0' not in st.session_state:
+        st.session_state['p0'] = []
+
+    if 'old_frame' not in st.session_state:
+        cap_ref = cv.VideoCapture(f"./{uploaded_file.name}")
+        ret, old_frame = cap_ref.read()
+        st.session_state['old_frame'] = old_frame
+
+    st.subheader("If you don't select custom points, the algorithm will select the optimum points for you")
+    selected_point = streamlit_image_coordinates(st.session_state['old_frame'])
+
+    if selected_point:
+        x, y = selected_point['x'], selected_point['y']
+        st.session_state['p0'].append(np.array([[x,y]],dtype=np.float32))
+        cv.circle(st.session_state['old_frame'],(x,y),3,255,-1)
+        
+    keep_selecting = not st.button("Finished picking points")
+    return keep_selecting
+
+
+
 if uploaded_file is not None:
-        df, ref_frame, x, y, fps = process_video(uploaded_file)
+    save_path = Path(f"./{uploaded_file.name}")
+    with open(save_path, mode="wb") as w:
+        w.write(uploaded_file.getvalue())
+
+
+
+    keep_selecting = select_points()
+    
+
+    if not keep_selecting:
+        df, ref_frame, x, y, fps = process_video(uploaded_file, np.array(st.session_state['p0']))
 
         csv = df.to_csv().encode('utf-8')
 
